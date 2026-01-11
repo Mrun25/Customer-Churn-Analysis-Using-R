@@ -1,25 +1,180 @@
-# Customer Churn Analysis Using R
+---
 
-## Business Problem
-Understanding why customers churn and identifying high-risk segments.
+title: "Customer Churn Analysis & Retention Strategy"
+author: "Your Name"
+date: "`r Sys.Date()`"
+output: html_document
+---------------------
 
-## Dataset
-Telco Customer Churn Dataset (Kaggle)
+## 1. Business Problem
 
-## Tools Used
-- R
-- dplyr
-- ggplot2
-- caret
+Customer acquisition is costly, and long-term business growth depends on retaining existing customers. Telecom companies often face high churn rates, especially among short-tenure and month-to-month customers.
 
-## Key Insights
-- Month-to-month contracts show highest churn
-- Early tenure customers are most at risk
+**Objective:**
 
-## Model
-Logistic Regression
-Accuracy: ~80%
+* Understand key factors driving customer churn
+* Identify high-risk customer segments
+* Build a predictive model to estimate churn probability
+* Provide actionable retention strategies
 
-## Business Recommendations
-- Incentivize long-term contracts
-- Improve first-year customer onboarding
+---
+
+## 2. Dataset Overview
+
+* **Source:** Telco Customer Churn Dataset (Kaggle)
+* **Observations:** Customers of a telecom service
+* **Target Variable:** `Churn` (Yes / No)
+* **Feature Types:**
+
+  * Demographic
+  * Account information
+  * Service usage
+  * Billing details
+
+library(dplyr)
+
+raw_data <- read.csv("data/telco_churn.csv", stringsAsFactors = FALSE)
+str(raw_data)
+
+---
+
+## 3. Data Cleaning & Preprocessing
+
+### Steps Performed
+
+* Converted `TotalCharges` from character to numeric
+* Removed missing values
+* Converted churn variable into binary format (0/1)
+
+**Why:**
+
+* Models require numeric consistency
+* Missing values can bias analysis and break models
+* Logistic regression requires a binary target
+
+data <- raw_data
+
+data$TotalCharges <- as.numeric(data$TotalCharges)
+data <- na.omit(data)
+
+data$Churn <- ifelse(data$Churn == "Yes", 1, 0)
+
+write.csv(data, "data/cleaned_churn_data.csv", row.names = FALSE)
+
+---
+
+## 4. Exploratory Data Analysis (EDA)
+
+### Churn Distribution
+
+library(ggplot2)
+
+ggplot(data, aes(x = factor(Churn))) +
+geom_bar() +
+labs(title = "Customer Churn Distribution", x = "Churn", y = "Count")
+
+**Insight:**
+
+* Churned customers form a significant portion of the dataset, justifying deeper analysis.
+
+---
+
+### Churn by Contract Type
+
+ggplot(data, aes(x = Contract, fill = factor(Churn))) +
+geom_bar(position = "fill") +
+labs(title = "Churn Rate by Contract Type", y = "Proportion")
+
+**Insight:**
+
+* Month-to-month contracts show the highest churn
+* Long-term contracts improve retention
+
+---
+
+## 5. Feature Engineering
+
+### Tenure Grouping
+
+Created customer tenure buckets to better interpret lifecycle risk.
+
+data$tenure_group <- cut(
+data$tenure,
+breaks = c(0, 12, 24, 48, 72),
+labels = c("0–1 Year", "1–2 Years", "2–4 Years", "4–6 Years")
+)
+
+write.csv(data, "data/final_churn_data.csv", row.names = FALSE)
+
+**Why:**
+
+* Improves interpretability
+* Helps target retention strategies by lifecycle stage
+
+---
+
+## 6. Statistical Analysis
+
+### Contract Type vs Churn (Chi-Square Test)
+
+chisq.test(table(data$Contract, data$Churn))
+
+**Conclusion:**
+
+* Contract type and churn are statistically dependent
+
+---
+
+## 7. Predictive Modeling (Logistic Regression)
+
+### Model Building
+
+model <- glm(
+Churn ~ tenure + MonthlyCharges + Contract,
+data = data,
+family = "binomial"
+)
+
+summary(model)
+
+**Why Logistic Regression:**
+
+* Binary outcome
+* Interpretable coefficients
+* Widely accepted in business analytics
+
+---
+
+## 8. Model Evaluation
+
+pred_prob <- predict(model, type = "response")
+pred <- ifelse(pred_prob > 0.5, 1, 0)
+
+accuracy <- mean(pred == data$Churn)
+accuracy
+
+**Result:**
+
+* Model accuracy ~ **80%**
+
+---
+
+## 9. Key Insights
+
+* Customers on month-to-month contracts are most likely to churn
+* Short-tenure customers show higher churn risk
+* Higher monthly charges correlate with churn
+
+---
+
+## 10. Business Recommendations
+
+* Encourage long-term contracts with incentives
+* Strengthen onboarding and engagement during the first year
+* Proactively monitor high-billing customers
+
+---
+
+## 11. Conclusion
+
+This project demonstrates a complete data analytics workflow in R — from raw data to actionable business insights. The analysis supports strategic decision-making and highlights how predictive modeling can enhance customer retention efforts.
